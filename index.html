@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#111827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Varasto QR"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Varasto QR Cloud V7</title>
+<meta name="theme-color" content="#111827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Varasto QR"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Varasto QR Cloud V8</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f4f6;color:#111827}
 header{background:#111827;color:#fff;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:23px}header p{margin:3px 0 0;color:#cbd5e1;font-size:13px}
@@ -14,6 +14,9 @@ button{border:0;border-radius:14px;padding:14px 15px;font-size:16px;font-weight:
 .modal{position:fixed;inset:0;background:#0008;display:flex;align-items:end;z-index:20}.sheet{background:#fff;width:100%;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:17px}
 .tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;z-index:10;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 18px #0000000d}.tabs button{flex:1;background:#fff;border-radius:0;font-size:12px;padding:13px 5px}.empty{text-align:center;color:#6b7280;padding:25px}
 #reader{width:100%;border-radius:14px;overflow:hidden}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#e5e7eb;font-size:12px}.tree{margin:10px 0}.tree-parent{font-size:18px;font-weight:800}.tree-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.tree-head button{min-height:40px;padding:9px 12px;font-size:14px}.tree-child{margin:8px 0 8px 16px;border-left:3px solid #e5e7eb;padding-left:12px}.unit{font-size:13px;color:#6b7280}.indent{padding-left:18px}.sub-actions{display:flex;gap:8px;margin-top:8px}.sub-actions button{flex:1;min-height:42px;padding:10px 12px;font-size:14px}
+
+.history-toolbar{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px}.history-toolbar .row{align-items:end}.history-toolbar button{min-height:46px}.history-group{border:1px solid #e5e7eb;border-radius:16px;margin:12px 0;overflow:hidden;background:#fff}.history-group-head{padding:14px 16px;background:#f8fafc;border-bottom:1px solid #e5e7eb}.history-group-head h4{margin:0 0 4px;font-size:17px}.history-group-head small{color:#6b7280}.balance-table,.event-table{width:100%;border-collapse:collapse;font-size:14px}.balance-table th,.balance-table td,.event-table th,.event-table td{padding:9px 10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}.balance-table th,.event-table th{font-size:12px;color:#6b7280;background:#fafafa}.balance-table td:last-child,.balance-table th:last-child,.event-table td:last-child,.event-table th:last-child{text-align:right}.balance-low{color:#b45309;font-weight:800}.event-plus{color:#166534;font-weight:800}.event-minus{color:#991b1b;font-weight:800}.history-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}.history-summary .card{margin:0;padding:12px}.history-summary b{font-size:19px;display:block}.print-only{display:none}
+@media (min-width:700px){.history-toolbar{grid-template-columns:1fr auto}.history-summary{grid-template-columns:repeat(4,1fr)}.history-group-head{padding:16px 18px}.balance-table th,.balance-table td,.event-table th,.event-table td{padding:10px 12px}}
 @media (min-width:900px){
 main{max-width:1400px;padding:24px 32px 40px}
 #productList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
@@ -53,7 +56,17 @@ main{max-width:1400px;padding:24px 32px 40px}
 </section>
 
 <section id="products" class="hidden"><div class="card"><button class="primary full" onclick="openProductForm()">＋ Lisää päätuote</button><button class="secondary full" style="margin-top:8px" onclick="openSubProductForm()">＋ Lisää alatuote</button><input id="search" placeholder="Hae tuotetta..." oninput="renderProducts()"></div><div id="productList"></div></section>
-<section id="history" class="hidden"><div class="card"><h3 style="margin-top:0">Varastohistoria</h3><div id="historyList"></div></div></section>
+<section id="history" class="hidden">
+<div class="card">
+  <h3 style="margin-top:0">Varastohistoria ja tuoteryhmät</h3>
+  <div class="history-toolbar">
+    <div><label>Kuukausi raportille</label><input id="reportMonth" type="month"></div>
+    <button class="primary" onclick="showMonthlyReport()">📄 Näytä kuukausiraportti</button>
+  </div>
+  <div id="historySummary" class="history-summary"></div>
+  <div id="historyList"></div>
+</div>
+</section>
 </main>
 
 <div id="modal" class="modal hidden"><div class="sheet">
@@ -71,9 +84,11 @@ const $=id=>document.getElementById(id);
 const loginView=$("loginView"), appView=$("app"), tabsView=$("tabs");
 const userLabelEl=$("userLabel"), loginMsgEl=$("loginMsg"), emailInput=$("email"), passwordInput=$("password");
 const modalEl=$("modal"), modalTitleEl=$("modalTitle"), scannerAreaEl=$("scannerArea"), productAreaEl=$("productArea"), formAreaEl=$("formArea"), readerEl=$("reader");
-const qrFileInput=$("qrFile"), productCountEl=$("productCount"), parentCountEl=$("parentCount"), recentEl=$("recent"), productListEl=$("productList"), historyListEl=$("historyList"), searchInput=$("search");
+const qrFileInput=$("qrFile"), productCountEl=$("productCount"), parentCountEl=$("parentCount"), recentEl=$("recent"), productListEl=$("productList"), historyListEl=$("historyList"), historySummaryEl=$("historySummary"), reportMonthEl=$("reportMonth"), searchInput=$("search");
 let products=[], history=[], scanner=null, session=null, scannerStarting=false, scannerClosing=false;
 const expandedParents=new Set(JSON.parse(localStorage.getItem('varasto_qr_v7_expanded_parents')||'[]'));
+function currentMonthValue(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+if(reportMonthEl)reportMonthEl.value=currentMonthValue();
 function saveExpanded(){localStorage.setItem('varasto_qr_v7_expanded_parents',JSON.stringify([...expandedParents]))}
 function toggleParent(id){expandedParents.has(id)?expandedParents.delete(id):expandedParents.add(id);saveExpanded();renderProducts()}
 function configured(){return /^https:\/\//.test(SUPABASE_URL)&&/^sb_publishable_/.test(SUPABASE_KEY)}
@@ -89,7 +104,7 @@ async function logout(){saveSession(null);loginView.classList.remove('hidden');a
 async function enterApp(){const u=session?.user;loginView.classList.add('hidden');appView.classList.remove('hidden');tabsView.classList.remove('hidden');userLabelEl.textContent=u?.email||'Kirjautunut';await loadAll()}
 (async()=>{if(!configured()){msg('Supabase-asetukset ovat virheelliset.',true);return}const s=loadSession();if(s?.access_token){session=s;try{const u=await authFetch('/auth/v1/user',{headers:{Authorization:'Bearer '+s.access_token}});session.user=u;saveSession(session);await enterApp()}catch(e){console.warn('Vanha istunto ei kelpaa:',e);saveSession(null)}}})();
 [emailInput,passwordInput].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')loginUser()}));
-async function loadAll(){try{products=await dbFetch('/products?select=*&order=name.asc')||[];history=await dbFetch('/stock_movements?select=*&order=created_at.desc&limit=100')||[];renderAll()}catch(e){console.error(e);alert('Tietojen lataus epäonnistui: '+e.message)}}
+async function loadAll(){try{products=await dbFetch('/products?select=*&order=name.asc')||[];history=await dbFetch('/stock_movements?select=*&order=created_at.desc&limit=500')||[];renderAll()}catch(e){console.error(e);alert('Tietojen lataus epäonnistui: '+e.message)}}
 function show(id){['app','products','history'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));renderAll()}
 function fmtQty(v){const n=Number(v||0);return Number.isInteger(n)?String(n):n.toLocaleString('fi-FI',{maximumFractionDigits:3})}
 function unitLabel(u){return u==='kg'?'kg':u==='l'?'l':'kpl'}
@@ -97,7 +112,56 @@ function renderAll(){productCountEl.textContent=products.length;parentCountEl.te
 function childrenOf(id){return products.filter(p=>p.parent_id===id)}
 function productCard(p,child=false){return `<div class="card product ${child?'indent':''}"><div><b>${esc(p.name)}</b><br><small>${esc(p.sku)} · ${p.unit} · QR ${esc(p.qr_code||'-')} · ${esc(p.location||'-')}</small></div><div class="qty ${Number(p.quantity)<=Number(p.min_quantity)?'low':''}">${fmtQty(p.quantity)} ${unitLabel(p.unit)}<br><button class="secondary" onclick="openProduct('${escAttr(p.id)}')">Avaa</button></div></div>`}
 function renderProducts(){const q=(searchInput?.value||'').trim().toLowerCase();const roots=products.filter(p=>!p.parent_id);let html='';for(const parent of roots){const kids=childrenOf(parent.id);const matches=!q||[parent,...kids].some(p=>(p.name+' '+p.sku+' '+(p.qr_code||'')).toLowerCase().includes(q));if(!matches)continue;const open=(!q&&expandedParents.has(parent.id))||!!q;html+=`<div class="tree"><div class="tree-parent"><div class="tree-head"><div>📦 ${esc(parent.name)} <span class="pill">${unitLabel(parent.unit)}</span><div class="unit">${kids.length} alatuotetta · saldo ${fmtQty(parent.quantity)} ${unitLabel(parent.unit)}</div></div><button class="secondary" onclick="toggleParent('${escAttr(parent.id)}')">${open?'▲ Piilota':'▼ Näytä'}</button></div><div class="sub-actions"><button class="secondary" onclick="openProduct('${escAttr(parent.id)}')">Avaa päätuote</button><button class="primary" onclick="openSubProductForm('${escAttr(parent.id)}')">＋ Alatuote</button></div></div>${open?`<div class="tree-children">${kids.length?kids.map(k=>`<div class="tree-child"><div class="unit">Alatuote</div>${productCard(k,true)}</div>`).join(''):'<div class="card empty">Ei alatuotteita.</div>'}</div>`:''}</div>`}const orphan=products.filter(p=>p.parent_id&&!products.some(x=>x.id===p.parent_id));if(orphan.length)html+='<div class="card"><b>Ilman päätuotetta</b><div class="unit">Näitä tuotteita voi korjata avaamalla ja valitsemalla päätuotteen.</div></div>'+orphan.map(p=>productCard(p)).join('');productListEl.innerHTML=html||'<div class="card empty">Ei tuotteita.</div>'}
-function renderHistory(){historyListEl.innerHTML=history.length?history.map(h=>`<div style="padding:9px 0;border-bottom:1px solid #eee"><b>${Number(h.delta)>0?'+':''}${fmtQty(h.delta)} ${unitLabel(h.unit||'kpl')}</b> · ${esc(h.product_name||'Tuote')}<br><small>${new Date(h.created_at).toLocaleString('fi-FI')} · saldo ${fmtQty(h.balance_after)} ${unitLabel(h.unit||'kpl')}</small></div>`).join(''):'<div class="empty">Ei tapahtumia.</div>'}
+function rootProductFor(p){
+  let cur=p, guard=0;
+  while(cur?.parent_id&&guard<20){cur=products.find(x=>x.id===cur.parent_id);guard++}
+  return cur||p;
+}
+function groupProducts(){
+  const groups=new Map();
+  for(const p of products){const root=rootProductFor(p);if(!groups.has(root.id))groups.set(root.id,{root,items:[]});groups.get(root.id).items.push(p)}
+  return [...groups.values()].sort((a,b)=>a.root.name.localeCompare(b.root.name,'fi'));
+}
+function renderHistory(){
+  const groups=groupProducts();
+  const eventByProduct=new Map();
+  history.forEach(h=>{if(!eventByProduct.has(h.product_id))eventByProduct.set(h.product_id,[]);eventByProduct.get(h.product_id).push(h)});
+  const totalEvents=history.length;
+  const additions=history.filter(h=>Number(h.delta)>0).length;
+  const removals=history.filter(h=>Number(h.delta)<0).length;
+  historySummaryEl.innerHTML=`<div class="card"><span>Tapahtumia</span><b>${totalEvents}</b></div><div class="card"><span>Lisäyksiä</span><b>${additions}</b></div><div class="card"><span>Vähennyksiä</span><b>${removals}</b></div><div class="card"><span>Tuoteryhmiä</span><b>${groups.length}</b></div>`;
+  if(!groups.length){historyListEl.innerHTML='<div class="empty">Ei tuoteryhmiä.</div>';return}
+  historyListEl.innerHTML=groups.map(g=>{
+    const items=g.items.sort((a,b)=>a.parent_id?b.parent_id? a.name.localeCompare(b.name,'fi'):-1:1);
+    const events=items.flatMap(p=>(eventByProduct.get(p.id)||[]).map(h=>({...h,_product:p}))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    return `<div class="history-group"><div class="history-group-head"><h4>📦 ${esc(g.root.name)}</h4><small>${g.items.length} tuotetta · ryhmän päätuote: ${fmtQty(g.root.quantity)} ${unitLabel(g.root.unit)}</small></div><div style="padding:10px 12px 2px"><h5 style="margin:4px 0 8px">Varastosaldot</h5><table class="balance-table"><thead><tr><th>Tuote</th><th>Tyyppi</th><th>Sijainti</th><th>Saldo</th></tr></thead><tbody>${items.map(p=>`<tr><td>${esc(p.name)}<br><small>${esc(p.sku)}</small></td><td>${p.id===g.root.id?'Päätuote':'Alatuote'}</td><td>${esc(p.location||'-')}</td><td class="${Number(p.quantity)<=Number(p.min_quantity)?'balance-low':''}">${fmtQty(p.quantity)} ${unitLabel(p.unit)}</td></tr>`).join('')}</tbody></table></div><div style="padding:10px 12px 12px"><h5 style="margin:4px 0 8px">Tapahtumat</h5>${events.length?`<table class="event-table"><thead><tr><th>Aika</th><th>Tuote</th><th>Muutos</th><th>Saldo</th></tr></thead><tbody>${events.map(h=>`<tr><td>${new Date(h.created_at).toLocaleString('fi-FI')}</td><td>${esc(h.product_name||h._product.name)}</td><td class="${Number(h.delta)>0?'event-plus':'event-minus'}">${Number(h.delta)>0?'+':''}${fmtQty(h.delta)} ${unitLabel(h.unit||h._product.unit)}</td><td>${fmtQty(h.balance_after)} ${unitLabel(h.unit||h._product.unit)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty" style="padding:12px">Ei kirjattuja tapahtumia näille tuotteille ladatussa historiassa.</div>'}</div></div>`;
+  }).join('');
+}
+async function fetchMonthlyHistory(month){
+  const [y,m]=month.split('-').map(Number); if(!y||!m)throw new Error('Valitse kuukausi.');
+  const start=new Date(y,m-1,1); const end=new Date(y,m,1);
+  const q='/stock_movements?select=*&created_at=gte.'+encodeURIComponent(start.toISOString())+'&created_at=lt.'+encodeURIComponent(end.toISOString())+'&order=created_at.asc';
+  return await dbFetch(q)||[];
+}
+function reportGroupData(monthHistory){
+  const groups=groupProducts();
+  const byRoot=new Map(groups.map(g=>[g.root.id,{...g,events:[]} ]));
+  for(const h of monthHistory){const p=products.find(x=>x.id===h.product_id);const root=rootProductFor(p||{name:h.product_name,parent_id:null});if(!byRoot.has(root.id))byRoot.set(root.id,{root,items:p?[p]:[],events:[]});byRoot.get(root.id).events.push({...h,_product:p});}
+  return [...byRoot.values()].sort((a,b)=>a.root.name.localeCompare(b.root.name,'fi'));
+}
+function showMonthlyReport(){
+  const month=reportMonthEl?.value||currentMonthValue();
+  showPrintReport(month);
+}
+async function showPrintReport(month){
+  try{
+    const monthHistory=await fetchMonthlyHistory(month); const groups=reportGroupData(monthHistory); const [y,m]=month.split('-').map(Number); const monthName=new Intl.DateTimeFormat('fi-FI',{month:'long',year:'numeric'}).format(new Date(y,m-1,1));
+    const adds=monthHistory.filter(h=>Number(h.delta)>0).length, rems=monthHistory.filter(h=>Number(h.delta)<0).length;
+    const rows=groups.map(g=>`<section class="group"><h2>📦 ${esc(g.root.name)}</h2><p class="muted">Tuoteryhmässä ${g.items.length} tuotetta</p><h3>Varastosaldot</h3><table><thead><tr><th>Tuote</th><th>Tyyppi</th><th>Sijainti</th><th>Saldo</th></tr></thead><tbody>${g.items.sort((a,b)=>a.parent_id?b.parent_id?a.name.localeCompare(b.name,'fi'):-1:1).map(p=>`<tr><td>${esc(p.name)}<br><small>${esc(p.sku)}</small></td><td>${p.id===g.root.id?'Päätuote':'Alatuote'}</td><td>${esc(p.location||'-')}</td><td>${fmtQty(p.quantity)} ${unitLabel(p.unit)}</td></tr>`).join('')}</tbody></table><h3>Tapahtumat kuukaudelta</h3>${g.events.length?`<table><thead><tr><th>Aika</th><th>Tuote</th><th>Muutos</th><th>Saldo tapahtuman jälkeen</th></tr></thead><tbody>${g.events.map(h=>`<tr><td>${new Date(h.created_at).toLocaleString('fi-FI')}</td><td>${esc(h.product_name||h._product?.name||'Tuote')}</td><td>${Number(h.delta)>0?'+':''}${fmtQty(h.delta)} ${unitLabel(h.unit||h._product?.unit||'kpl')}</td><td>${fmtQty(h.balance_after)} ${unitLabel(h.unit||h._product?.unit||'kpl')}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">Ei tapahtumia.</p>'}</section>`).join('');
+    const w=window.open('','_blank'); if(!w){alert('Tulostusikkuna estettiin selaimessa. Salli ponnahdusikkunat tälle sivulle.');return;}
+    w.document.write(`<!doctype html><html lang="fi"><head><meta charset="utf-8"><title>Varasto QR - Kuukausiraportti ${esc(monthName)}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#111;font-size:12px;margin:0}h1{font-size:24px;margin:0 0 4px}h2{font-size:18px;margin:0 0 4px}h3{font-size:13px;margin:14px 0 6px}.meta{color:#555;margin-bottom:18px}.group{page-break-inside:avoid;border-top:2px solid #111;padding-top:10px;margin-top:18px}.muted{color:#666}table{width:100%;border-collapse:collapse;margin-bottom:8px}th,td{border:1px solid #ccc;padding:6px 7px;text-align:left;vertical-align:top}th{background:#f1f1f1;font-size:11px}td:last-child,th:last-child{text-align:right}.totals{display:flex;gap:30px;margin:12px 0 18px;font-weight:bold}.footer{margin-top:20px;color:#666;font-size:10px}@media print{.no-print{display:none}}</style></head><body><h1>Varasto QR Cloud – kuukausiraportti</h1><div class="meta">${esc(monthName.charAt(0).toUpperCase()+monthName.slice(1))} · Tulostettu ${new Date().toLocaleString('fi-FI')}</div><div class="totals"><span>Tapahtumia: ${monthHistory.length}</span><span>Lisäyksiä: ${adds}</span><span>Vähennyksiä: ${rems}</span><span>Tuoteryhmiä: ${groups.length}</span></div>${rows||'<p>Ei tuoteryhmiä.</p>'}<div class="footer">Varasto QR Cloud</div><script>window.onload=function(){setTimeout(function(){window.print()},300)};<\/script></body></html>`); w.document.close();
+  }catch(e){alert('Kuukausiraportin muodostus epäonnistui: '+e.message)}
+}
 function renderRecent(){recentEl.innerHTML=history.slice(0,5).map(h=>`<div style="padding:8px 0;border-bottom:1px solid #eee">${Number(h.delta)>0?'➕':'➖'} <b>${fmtQty(Math.abs(h.delta))} ${unitLabel(h.unit||'kpl')}</b> ${esc(h.product_name||'Tuote')} <small>· saldo ${fmtQty(h.balance_after)} ${unitLabel(h.unit||'kpl')}</small></div>`).join('')||'<div class="empty">Ei tapahtumia vielä.</div>'}
 function openModal(t){modalEl.classList.remove('hidden');modalTitleEl.textContent=t}
 async function closeModal(){scannerClosing=true;await stopScanner();modalEl.classList.add('hidden');scannerClosing=false}
