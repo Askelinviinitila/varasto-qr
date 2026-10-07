@@ -55,7 +55,7 @@ const loginView=$("loginView"), appView=$("app"), tabsView=$("tabs");
 const userLabelEl=$("userLabel"), loginMsgEl=$("loginMsg"), emailInput=$("email"), passwordInput=$("password");
 const modalEl=$("modal"), modalTitleEl=$("modalTitle"), scannerAreaEl=$("scannerArea"), productAreaEl=$("productArea"), formAreaEl=$("formArea"), readerEl=$("reader");
 const qrFileInput=$("qrFile"), productCountEl=$("productCount"), totalQtyEl=$("totalQty"), recentEl=$("recent"), productListEl=$("productList"), historyListEl=$("historyList"), searchInput=$("search");
-let products=[], history=[], scanner=null, session=null;
+let products=[], history=[], scanner=null, session=null, scannerStarting=false, scannerClosing=false;
 
 function configured(){return /^https:\/\//.test(SUPABASE_URL)&&/^sb_publishable_/.test(SUPABASE_KEY)}
 function msg(t,error=false){loginMsgEl.innerHTML='<div class="notice '+(error?'error':'')+'">'+esc(t)+'</div>'}
@@ -101,11 +101,56 @@ function renderProducts(){const q=(searchInput?.value||'').toLowerCase();const l
 function renderHistory(){historyListEl.innerHTML=history.length?history.map(h=>`<div style="padding:9px 0;border-bottom:1px solid #eee"><b>${h.delta>0?'+':''}${h.delta} kpl</b> · ${esc(h.product_name||'Tuote')}<br><small>${new Date(h.created_at).toLocaleString('fi-FI')} · saldo ${h.balance_after}</small></div>`).join(''):'<div class="empty">Ei tapahtumia.</div>'}
 function renderRecent(){recentEl.innerHTML=history.slice(0,5).map(h=>`<div style="padding:8px 0;border-bottom:1px solid #eee">${h.delta>0?'➕':'➖'} <b>${Math.abs(h.delta)} kpl</b> ${esc(h.product_name||'Tuote')} <small>· saldo ${h.balance_after}</small></div>`).join('')||'<div class="empty">Ei tapahtumia vielä.</div>'}
 function openModal(t){modalEl.classList.remove('hidden');modalTitleEl.textContent=t}
-function closeModal(){stopScanner();modalEl.classList.add('hidden')}
-async function openScanner(){openModal('Skannaa QR-koodi');scannerAreaEl.classList.remove('hidden');productAreaEl.classList.add('hidden');formAreaEl.classList.add('hidden');setTimeout(startScanner,150)}
-async function startScanner(){if(typeof Html5Qrcode==='undefined'){readerEl.innerHTML='<div class="notice error">QR-skannerin kirjasto ei latautunut. Voit silti lisätä tuotteen Tuotteet-näkymästä.</div>';return}scanner=new Html5Qrcode('reader');try{await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:250}},code=>{stopScanner();handleCode(code)},()=>{})}catch(e){readerEl.innerHTML='<div class="notice error">Kameraa ei voitu avata. Salli kamera tai käytä QR-kuvaa.</div>'}}
-function stopScanner(){if(scanner){scanner.stop().catch(()=>{});scanner.clear().catch(()=>{});scanner=null}}
-qrFileInput.addEventListener('change',async e=>{if(!e.target.files[0]||typeof Html5Qrcode==='undefined')return;const r=new Html5Qrcode('reader');try{const c=await r.scanFile(e.target.files[0],true);handleCode(c)}catch(_){alert('QR-koodia ei löytynyt kuvasta.')}r.clear().catch(()=>{})})
+async function closeModal(){
+  scannerClosing=true;
+  await stopScanner();
+  modalEl.classList.add('hidden');
+  scannerClosing=false;
+}
+async function openScanner(){
+  await stopScanner();
+  openModal('Skannaa QR-koodi');
+  scannerAreaEl.classList.remove('hidden');
+  productAreaEl.classList.add('hidden');
+  formAreaEl.classList.add('hidden');
+  readerEl.innerHTML='';
+  scannerClosing=false;
+  setTimeout(()=>startScanner(),150);
+}
+async function startScanner(){
+  if(scannerClosing || scannerStarting || scanner) return;
+  if(typeof Html5Qrcode==='undefined'){readerEl.innerHTML='<div class="notice error">QR-skannerin kirjasto ei latautunut. Voit silti lisätä tuotteen Tuotteet-näkymästä.</div>';return}
+  scannerStarting=true;
+  try{
+    const instance=new Html5Qrcode('reader');
+    scanner=instance;
+    await instance.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:250}},async code=>{
+      if(scannerClosing) return;
+      await stopScanner();
+      handleCode(code);
+    },()=>{});
+  }catch(e){
+    if(!scannerClosing) readerEl.innerHTML='<div class="notice error">Kameraa ei voitu avata. Salli kamera tai käytä QR-kuvaa.</div>';
+    scanner=null;
+  }finally{
+    scannerStarting=false;
+    if(scannerClosing) await stopScanner();
+  }
+}
+async function stopScanner(){
+  const current=scanner;
+  scanner=null;
+  if(!current) { if(readerEl) readerEl.innerHTML=''; return; }
+  try{ await current.stop(); }catch(e){}
+  try{ await current.clear(); }catch(e){}
+  if(readerEl) readerEl.innerHTML='';
+}
+qrFileInput.addEventListener('change',async e=>{
+  if(!e.target.files[0]||typeof Html5Qrcode==='undefined')return;
+  const r=new Html5Qrcode('reader');
+  try{const c=await r.scanFile(e.target.files[0],true);await stopScanner();handleCode(c)}
+  catch(_){alert('QR-koodia ei löytynyt kuvasta.');try{await r.clear()}catch(e){}}
+})
 async function handleCode(code){try{const d=await dbFetch('/products?select=*&qr_code=eq.'+encodeURIComponent(code));d?.[0]?openProduct(d[0].id):openNewFromQr(code)}catch(e){alert('QR-tuotteen haku epäonnistui: '+e.message)}}
 async function openProduct(id){try{const d=await dbFetch('/products?select=*&id=eq.'+encodeURIComponent(id));const p=d?.[0];if(!p)throw new Error('Tuotetta ei löytynyt.');openModal(p.name);scannerAreaEl.classList.add('hidden');formAreaEl.classList.add('hidden');productAreaEl.classList.remove('hidden');productAreaEl.innerHTML=`<div class="card"><span class="pill">QR ${esc(p.qr_code||'-')}</span><h2>${esc(p.name)}</h2><div class="qty" style="font-size:42px;text-align:left">${p.quantity} kpl</div><p>Paikka: ${esc(p.location||'-')}<br>Minimiraja: ${p.min_quantity} kpl</p><div class="actions"><button class="secondary" onclick="changeQty('${p.id}',-1)">➖ Ota pois</button><button class="primary" onclick="changeQty('${p.id}',1)">➕ Lisää</button></div><button class="secondary full" style="margin-top:10px" onclick="editProduct('${p.id}')">Muokkaa</button></div>`}catch(e){alert(e.message)}}
 async function changeQty(id,sign){const n=prompt(sign>0?'Lisättävä määrä:':'Poistettava määrä:','1');const amount=parseInt(n,10);if(!Number.isInteger(amount)||amount<=0)return;try{await dbFetch('/rpc/change_stock',{method:'POST',body:JSON.stringify({p_product_id:id,p_delta:sign*amount})});await loadAll();openProduct(id)}catch(e){alert('Varastomuutosta ei voitu tallentaa: '+e.message)}}
