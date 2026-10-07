@@ -1,24 +1,25 @@
 <!doctype html>
 <html lang="fi">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#111827"><title>Varasto QR Cloud</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#111827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Varasto QR"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Varasto QR Cloud</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f4f6;color:#111827}
-header{background:#111827;color:#fff;padding:18px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:23px}header p{margin:3px 0 0;color:#cbd5e1;font-size:13px}
-main{max-width:850px;margin:auto;padding:15px 15px 90px}.card{background:#fff;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 2px 12px #0000000d}
+header{background:#111827;color:#fff;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:23px}header p{margin:3px 0 0;color:#cbd5e1;font-size:13px}
+main{max-width:850px;margin:auto;padding:10px 12px calc(90px + env(safe-area-inset-bottom))}.card{background:#fff;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 2px 12px #0000000d}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.stat b{font-size:29px;display:block}.stat span{font-size:13px;color:#6b7280}
-button{border:0;border-radius:12px;padding:13px 15px;font-size:15px;font-weight:700;cursor:pointer}.primary{background:#111827;color:#fff}.secondary{background:#e5e7eb}.danger{background:#fee2e2;color:#991b1b}.full{width:100%}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row{display:flex;gap:10px}.row>*{flex:1}input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;margin:5px 0 11px}label{font-size:13px;font-weight:700;color:#374151}
+button{border:0;border-radius:14px;padding:14px 15px;font-size:16px;font-weight:700;cursor:pointer;min-height:48px;touch-action:manipulation}button:disabled{opacity:.6;cursor:wait}.primary{background:#111827;color:#fff}.secondary{background:#e5e7eb}.danger{background:#fee2e2;color:#991b1b}.full{width:100%}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.install{display:none;margin:0 0 10px}.install.show{display:block}.row{display:flex;gap:10px}.row>*{flex:1}input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;margin:5px 0 11px}label{font-size:13px;font-weight:700;color:#374151}
 .hidden{display:none!important}.notice{padding:11px;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:13px;margin:10px 0}.error{background:#fee2e2;color:#991b1b}.product{display:flex;justify-content:space-between;gap:10px;align-items:center}.product small{color:#6b7280}.qty{font-size:20px;font-weight:800;text-align:right}.low{color:#b45309}
 .modal{position:fixed;inset:0;background:#0008;display:flex;align-items:end;z-index:20}.sheet{background:#fff;width:100%;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:17px}
-.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;z-index:10}.tabs button{flex:1;background:#fff;border-radius:0;font-size:12px;padding:13px 5px}.empty{text-align:center;color:#6b7280;padding:25px}
+.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;z-index:10;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 18px #0000000d}.tabs button{flex:1;background:#fff;border-radius:0;font-size:12px;padding:13px 5px}.empty{text-align:center;color:#6b7280;padding:25px}
 #reader{width:100%;border-radius:14px;overflow:hidden}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#e5e7eb;font-size:12px}
 </style>
 </head>
 <body>
 <header><h1>📦 Varasto QR Cloud</h1><p id="userLabel">Kirjaudu sisään käyttääksesi varastoa</p></header>
 <main>
+<button id="installBtn" class="primary full install">📲 Asenna sovellus puhelimeen</button>
 <section id="loginView">
 <div class="card"><h2>Kirjaudu</h2><div id="loginMsg"></div>
 <label>Sähköposti</label><input id="email" type="email" autocomplete="email">
@@ -117,4 +118,11 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function escAttr(s){return esc(s).replace(/`/g,'&#96;')}
 </script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;document.getElementById('installBtn')?.classList.add('show')});
+document.getElementById('installBtn')?.addEventListener('click',async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;document.getElementById('installBtn')?.classList.remove('show')});
+window.addEventListener('appinstalled',()=>document.getElementById('installBtn')?.classList.remove('show'));
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(console.warn));
+</script>
 </body></html>
