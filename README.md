@@ -1,9 +1,15 @@
-# Varasto QR Cloud – tietokone + mobiili
+# Varasto QR Cloud – V4
 
-Sama Supabase-tietokanta toimii tietokoneella ja puhelimella. Tämä versio on asennettava PWA-sovellus: puhelimessa sen voi lisätä aloitusnäyttöön ilman erillistä sovelluskauppaa.
+V4 parantaa päätuote/alatuote-näkymää:
+- Päätuotteet ovat avattavia ja suljettavia.
+- Haku avaa automaattisesti osuvat alatuotteet.
+- Päätuotteen kohdalta voi lisätä alatuotteen suoraan; päätuote valitaan valmiiksi.
+- Uudelle alatuotteelle päätuote on pakollinen.
+- Tuotetta ei voi vahingossa asettaa omaksi päätuotteekseen.
+- Aiemmin avatut päätuotteet muistetaan selaimessa.
+- Kpl/kg/l-yksiköt ja QR-toiminnot säilyvät ennallaan.
 
-## Julkaisu
-Lataa kaikki tiedostot GitHub Pagesiin siten, että index.html, manifest.json ja sw.js ovat repositoryn juuressa ja icons-kansio mukana.
-
-## Supabase
-Pidä nykyisen toimivan version Supabase URL ja publishable key index.html:ssa. Jos RLS:ää on jo korjattu, älä aja vanhaa schema.sql:ää uudelleen tuotantoprojektiin.
+## Päivitys nykyiseen käyttöön
+1. Korvaa GitHub Pagesissa vanhat sovellustiedostot tämän paketin tiedostoilla.
+2. Supabaseen ei tarvitse ajaa uutta SQL:ää, koska V4 ei muuta tietokantarakennetta.
+3. Jos puhelin näyttää vanhaa näkymää, sulje sovellus kokonaan ja avaa GitHub Pages uudelleen. Tarvittaessa poista sivuston välimuisti / asennettu sovellus ja asenna uudelleen.
