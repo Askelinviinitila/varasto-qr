@@ -1,6 +1,6 @@
 {
-  "name": "Varasto QR Cloud",
-  "short_name": "Varasto QR",
+  "name": "Askelin Viinitila Oy",
+  "short_name": "Askelin Viinitila",
   "description": "Pilvipohjainen varastonhallinta tietokoneelle ja puhelimeen",
   "lang": "fi-FI",
   "start_url": "./",
