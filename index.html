@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#111827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Varasto QR"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Varasto QR Cloud V8</title>
+<meta name="theme-color" content="#5b1827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Varasto QR"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Varasto QR Cloud V9 – Viinikellari</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f4f6;color:#111827}
 header{background:#111827;color:#fff;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:23px}header p{margin:3px 0 0;color:#cbd5e1;font-size:13px}
@@ -33,6 +33,88 @@ main{max-width:1400px;padding:24px 32px 40px}
 .product{min-height:76px}
 }
 @media (min-width:1300px){#productList{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+
+/* V9 VIINIKELLARI-TEEMA */
+:root{
+  --wine:#5b1827;
+  --wine-dark:#351019;
+  --wine-light:#7d2b3d;
+  --wood:#5a3b2a;
+  --stone:#241f1d;
+  --cream:#f5efe5;
+  --paper:#fffdf8;
+  --gold:#b89452;
+  --ink:#241d1a;
+}
+html{background:#1b1716}
+body{
+  background:
+    radial-gradient(circle at 15% 10%, rgba(184,148,82,.09), transparent 28%),
+    radial-gradient(circle at 85% 15%, rgba(125,43,61,.12), transparent 30%),
+    linear-gradient(135deg,#241f1d 0%,#171313 45%,#2a211d 100%);
+  color:var(--ink);
+}
+body:before{
+  content:"";
+  position:fixed;inset:0;pointer-events:none;z-index:-1;
+  opacity:.18;
+  background-image:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 70px),
+    repeating-linear-gradient(0deg,rgba(0,0,0,.06) 0 2px,transparent 2px 9px);
+}
+header{
+  background:linear-gradient(135deg,#351019,#5b1827 55%,#3d1720);
+  border-bottom:3px solid rgba(184,148,82,.65);
+  box-shadow:0 5px 22px rgba(0,0,0,.35);
+}
+header h1{font-family:Georgia,"Times New Roman",serif;letter-spacing:.3px}
+header p{color:#eadccf}
+main{max-width:1050px}
+.card{
+  background:rgba(255,253,248,.97);
+  border:1px solid rgba(184,148,82,.22);
+  box-shadow:0 5px 22px rgba(0,0,0,.18);
+}
+button.primary{
+  background:linear-gradient(135deg,#5b1827,#7d2b3d);
+  border:1px solid #8f4052;
+  box-shadow:0 3px 9px rgba(53,16,25,.25);
+}
+button.secondary{background:#e8ded2;color:#3b2923}
+button.danger{background:#f4dddd;color:#7a202d}
+input,select{
+  background:#fffdf8;
+  border-color:#cdbca8;
+}
+label{color:#4a372f}
+.notice{background:#f3eadb;border-color:#d8c3a5}
+.stat b{color:var(--wine)}
+.tree{
+  border-color:rgba(184,148,82,.28)!important;
+  box-shadow:0 5px 20px rgba(0,0,0,.16)!important;
+}
+.tree-parent{
+  background:linear-gradient(135deg,#351019,#5b1827)!important;
+  color:#fff!important;
+  border-bottom-color:rgba(184,148,82,.5)!important;
+}
+.tree-parent small,.tree-parent .muted{color:#eadccf!important}
+.tree-child .card{background:#fffdf8}
+.qty{color:var(--wine)!important}
+nav button.active,.tab.active{
+  background:var(--wine)!important;
+  color:#fff!important;
+}
+h2,h3{
+  font-family:Georgia,"Times New Roman",serif;
+}
+a{color:#7d2b3d}
+@media (min-width:900px){
+  body{background-attachment:fixed}
+  main{padding-top:22px}
+  .card{border-radius:16px}
+}
 
 </style>
 </head>
