@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#111827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Varasto QR"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Varasto QR Cloud V12 – Kuukausittainen varastohistoria</title>
+<meta name="theme-color" content="#111827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Varasto QR"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Varasto QR Cloud V13 – Päätuotteet kotinäkymässä</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f4f6;color:#111827}
 header{background:#111827;color:#fff;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:23px}header p{margin:3px 0 0;color:#cbd5e1;font-size:13px}
@@ -36,6 +36,19 @@ main{max-width:1400px;padding:24px 32px 40px}
 
 
 .qr-mini{font-size:12px;color:#5b1827}.qr-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.qr-box{display:flex;justify-content:center;align-items:center;background:#fff;padding:14px;border-radius:14px;border:1px solid #e5e7eb;margin:12px auto;width:max-content}.qr-code-text{font-family:monospace;font-size:12px;word-break:break-all;color:#6b7280;text-align:center}.qr-print{min-width:120px}@media print{body *{visibility:hidden!important}.qr-print-area,.qr-print-area *{visibility:visible!important}.qr-print-area{position:absolute;left:0;top:0;width:100%;padding:30px;text-align:center}.qr-print-area .qr-box{margin:20px auto}.no-print{display:none!important}}
+
+/* V13 KOTINÄKYMÄN PÄÄTUOTELISTA */
+.home-parent-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.home-parent-row{width:100%;display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border:1px solid #ded5ca;border-radius:14px;background:#fffdf8;color:#241d1a;cursor:pointer;box-shadow:0 2px 7px rgba(0,0,0,.06)}
+.home-parent-row:hover{border-color:#9b6a46;transform:translateY(-1px)}
+.home-parent-icon{font-size:24px;flex:0 0 auto}
+.home-parent-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.home-parent-main b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-parent-main small{margin-top:3px;color:#78685e}
+.home-parent-qty{font-weight:700;color:#5b1827;white-space:nowrap}
+.home-parent-qty.low{color:#9b2020}
+.home-parent-arrow{font-size:26px;color:#8b776a;line-height:1}
+@media(max-width:600px){.home-products .row{align-items:flex-start}.home-products .row>button{flex:0 0 auto}.home-parent-row{padding:11px 10px;gap:9px}.home-parent-icon{font-size:21px}.home-parent-main b{font-size:15px}.home-parent-main small{font-size:12px}.home-parent-qty{font-size:14px}.home-parent-arrow{font-size:23px}}
 </style>
 </head>
 <body>
@@ -55,6 +68,7 @@ main{max-width:1400px;padding:24px 32px 40px}
 <div class="card"><button class="primary full" onclick="openScanner()">📷 Skannaa QR-koodi</button>
 <div class="actions" style="margin-top:10px"><button class="secondary" onclick="show('products')">📦 Tuotteet</button><button class="secondary" onclick="show('history')">🕘 Historia</button></div></div>
 <div class="card"><h3 style="margin-top:0">Viimeisimmät tapahtumat</h3><div id="recent"></div></div>
+<div class="card home-products"><div class="row"><div><h3 style="margin:0">📦 Varastotuotteet</h3><div class="unit">Päätuotteet</div></div><button class="secondary" onclick="show('products')">Kaikki tuotteet</button></div><div id="homeParentList" class="home-parent-list"></div></div>
 </section>
 
 <section id="products" class="hidden"><div class="card"><button class="primary full" onclick="openProductForm()">＋ Lisää päätuote</button><button class="secondary full" style="margin-top:8px" onclick="openSubProductForm()">＋ Lisää alatuote</button><input id="search" placeholder="Hae tuotetta..." oninput="renderProducts()"></div><div id="productList"></div></section>
@@ -86,7 +100,7 @@ const $=id=>document.getElementById(id);
 const loginView=$("loginView"), appView=$("app"), tabsView=$("tabs");
 const userLabelEl=$("userLabel"), loginMsgEl=$("loginMsg"), emailInput=$("email"), passwordInput=$("password");
 const modalEl=$("modal"), modalTitleEl=$("modalTitle"), scannerAreaEl=$("scannerArea"), productAreaEl=$("productArea"), formAreaEl=$("formArea"), readerEl=$("reader");
-const qrFileInput=$("qrFile"), productCountEl=$("productCount"), parentCountEl=$("parentCount"), recentEl=$("recent"), productListEl=$("productList"), historyListEl=$("historyList"), historySummaryEl=$("historySummary"), reportMonthEl=$("reportMonth"), searchInput=$("search");
+const qrFileInput=$("qrFile"), productCountEl=$("productCount"), parentCountEl=$("parentCount"), recentEl=$("recent"), homeParentListEl=$("homeParentList"), productListEl=$("productList"), historyListEl=$("historyList"), historySummaryEl=$("historySummary"), reportMonthEl=$("reportMonth"), searchInput=$("search");
 let products=[], history=[], scanner=null, session=null, scannerStarting=false, scannerClosing=false;
 const expandedParents=new Set(JSON.parse(localStorage.getItem('varasto_qr_v7_expanded_parents')||'[]'));
 function currentMonthValue(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
@@ -111,7 +125,8 @@ async function ensureQrCodes(){for(const p of products){if(!p.qr_code&&p.id){con
 function show(id){['app','products','history'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));renderAll()}
 function fmtQty(v){const n=Number(v||0);return Number.isInteger(n)?String(n):n.toLocaleString('fi-FI',{maximumFractionDigits:3})}
 function unitLabel(u){return u==='kg'?'kg':u==='l'?'l':'kpl'}
-function renderAll(){productCountEl.textContent=products.length;parentCountEl.textContent=products.filter(p=>!p.parent_id).length;renderProducts();renderHistory();renderRecent()}
+function renderAll(){productCountEl.textContent=products.length;parentCountEl.textContent=products.filter(p=>!p.parent_id).length;renderProducts();renderHistory();renderRecent();renderHomeParents()}
+function renderHomeParents(){if(!homeParentListEl)return;const roots=products.filter(p=>!p.parent_id).sort((a,b)=>a.name.localeCompare(b.name,'fi'));if(!roots.length){homeParentListEl.innerHTML='<div class="empty">Ei päätuotteita vielä.</div>';return}homeParentListEl.innerHTML=roots.map(p=>{const kids=childrenOf(p.id);const low=Number(p.quantity)<=Number(p.min_quantity);return `<button class="home-parent-row" onclick="openProduct('${escAttr(p.id)}')"><span class="home-parent-icon">🍷</span><span class="home-parent-main"><b>${esc(p.name)}</b><small>${kids.length} alatuotetta · ${esc(p.location||'Ei sijaintia')}</small></span><span class="home-parent-qty ${low?'low':''}">${fmtQty(p.quantity)} ${unitLabel(p.unit)}</span><span class="home-parent-arrow">›</span></button>`}).join('')}
 function childrenOf(id){return products.filter(p=>p.parent_id===id)}
 function productCard(p,child=false){return `<div class="card product ${child?'indent':''}"><div><b>${esc(p.name)}</b><br><small>${esc(p.sku)} · ${p.unit} · QR ${esc(p.qr_code||'-')} · ${esc(p.location||'-')}</small></div><div class="qty ${Number(p.quantity)<=Number(p.min_quantity)?'low':''}">${fmtQty(p.quantity)} ${unitLabel(p.unit)}<br><button class="secondary" onclick="openProduct('${escAttr(p.id)}')">Avaa</button><button class="secondary" onclick="showQr('${escAttr(p.id)}')">📱 QR</button></div></div>`}
 function renderProducts(){const q=(searchInput?.value||'').trim().toLowerCase();const roots=products.filter(p=>!p.parent_id);let html='';for(const parent of roots){const kids=childrenOf(parent.id);const matches=!q||[parent,...kids].some(p=>(p.name+' '+p.sku+' '+(p.qr_code||'')).toLowerCase().includes(q));if(!matches)continue;const open=(!q&&expandedParents.has(parent.id))||!!q;html+=`<div class="tree"><div class="tree-parent"><div class="tree-head"><div>📦 ${esc(parent.name)} <span class="pill">${unitLabel(parent.unit)}</span><div class="unit">${kids.length} alatuotetta · saldo ${fmtQty(parent.quantity)} ${unitLabel(parent.unit)}</div></div><button class="secondary" onclick="toggleParent('${escAttr(parent.id)}')">${open?'▲ Piilota':'▼ Näytä'}</button></div><div class="sub-actions"><button class="secondary" onclick="openProduct('${escAttr(parent.id)}')">Avaa päätuote</button><button class="primary" onclick="openSubProductForm('${escAttr(parent.id)}')">＋ Alatuote</button></div></div>${open?`<div class="tree-children">${kids.length?kids.map(k=>`<div class="tree-child"><div class="unit">Alatuote</div>${productCard(k,true)}</div>`).join(''):'<div class="card empty">Ei alatuotteita.</div>'}</div>`:''}</div>`}const orphan=products.filter(p=>p.parent_id&&!products.some(x=>x.id===p.parent_id));if(orphan.length)html+='<div class="card"><b>Ilman päätuotetta</b><div class="unit">Näitä tuotteita voi korjata avaamalla ja valitsemalla päätuotteen.</div></div>'+orphan.map(p=>productCard(p)).join('');productListEl.innerHTML=html||'<div class="card empty">Ei tuotteita.</div>'}
